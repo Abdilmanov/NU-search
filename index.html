@@ -70,6 +70,15 @@
       .small-padding {
         padding: 0 8px;
       }
+      .danger {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 5px 14px;
+        color: white;
+        border-radius: 10px;
+        background-color: #f36860;
+      }
     </style>
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -92,11 +101,25 @@
         "esri/views/SceneView",
         "esri/layers/FeatureLayer",
         "esri/tasks/QueryTask",
-        "esri/tasks/support/Query"
-      ], function(Map, SceneView, FeatureLayer, QueryTask, Query) {
+        "esri/tasks/support/Query",
+        "esri/Graphic",
+        "esri/layers/GraphicsLayer"
+      ], function(
+        Map,
+        SceneView,
+        FeatureLayer,
+        QueryTask,
+        Query,
+        Graphic,
+        GraphicsLayer
+      ) {
+        var graphic_layer = new GraphicsLayer();
+
         var map = new Map({
           basemap: "dark-gray"
         });
+
+        map.add(graphic_layer);
 
         var view = new SceneView({
           container: "viewDiv",
@@ -119,24 +142,24 @@
 
         const search_button = document.getElementById("search_button");
 
+        var empty_block = "";
         view.when(function() {
           view.ui.add(search, "top-right");
-          // view.ui.add(search_block, "top-right");
-          // view.ui.add(search_nameroom, "top-right");
-          // view.ui.add(search_roomnum, "top-right");
 
           search_button.addEventListener("click", function() {
-            doQuerySelfEnd();
+            doQueryEnd();
           });
 
           // Проверка клика
           document.body.addEventListener("click", function(e) {
+            checkReadySearch();
             let activeUl = document.querySelector(".activeUl");
             // Открыт ли dropdown
             if (activeUl) {
               let src_el = e.srcElement;
+              console.log(e)
               // Клик был по dropdown
-              if (src_el.localName == "li") {
+              if (src_el.localName == "li" && src_el.id != "dangerLi") {
                 // querySelector('label > [id=')
                 let text_li = src_el.textContent;
                 switch (src_el.parentElement.id) {
@@ -153,6 +176,7 @@
                     input_roomnum.value = text_li;
                     break;
                 }
+                checkReadySearch();
                 checkAndCloseDropdown();
                 // Клик был не по dropdown
               } else {
@@ -178,264 +202,187 @@
             // ??
             if (
               e.srcElement.localName == "input" &&
-              (input_block.value ||
-                input_roomnum.value ||
-                input_nameroom.value) &&
-              !e.srcElement.textContent
+              e.srcElement.value == "" &&
+              (input_block.value || input_roomnum.value || input_nameroom.value)
             ) {
-              clearDropdownSelf();
-              clearUlListSelf();
-              let index1 = 0;
-              let index2 = 0;
-              let len = 6;
-              let length = features_result.length;
-              switch (e.srcElement.id) {
-                case "block":
-                  if (input_nameroom.value && input_roomnum.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.nameroom ==
-                          input_nameroom.value &&
-                        features_result[index2].attributes.roomnum ==
-                          input_roomnum.value &&
-                        features_result[index2].attributes.block != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.block,
-                          "block"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML = features_result[index2].attributes.block;
-                        block_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  } else if (input_nameroom.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length 189");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.nameroom ==
-                          input_nameroom.value &&
-                        features_result[index2].attributes.block != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.block,
-                          "block"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML = features_result[index2].attributes.block;
-                        block_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  } else if (input_roomnum.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.roomnum ==
-                          input_roomnum.value &&
-                        features_result[index2].attributes.block != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.block,
-                          "block"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML = features_result[index2].attributes.block;
-                        block_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  }
-                  if (index1 != 0) block_ul.classList.add("activeUl");
-                  break;
-                case "nameroom":
-                  if (input_block.value && input_roomnum.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.block ==
-                          input_block.value &&
-                        features_result[index2].attributes.roomnum ==
-                          input_roomnum.value &&
-                        features_result[index2].attributes.nameroom != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.nameroom,
-                          "nameroom"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML =
-                          features_result[index2].attributes.nameroom;
-                        nameroom_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  } else if (input_block.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.block ==
-                          input_block.value &&
-                        features_result[index2].attributes.nameroom != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.nameroom,
-                          "nameroom"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML =
-                          features_result[index2].attributes.nameroom;
-                        nameroom_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  } else if (input_roomnum.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.roomnum ==
-                          input_roomnum.value &&
-                        features_result[index2].attributes.nameroom != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.nameroom,
-                          "nameroom"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML =
-                          features_result[index2].attributes.nameroom;
-                        nameroom_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  }
-                  if (index1 != 0) nameroom_ul.classList.add("activeUl");
-                  break;
-                case "roomnum":
-                  if (input_block.value && input_nameroom.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.block ==
-                          input_block.value &&
-                        features_result[index2].attributes.nameroom ==
-                          input_nameroom.value &&
-                        features_result[index2].attributes.roomnum != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.roomnum,
-                          "roomnum"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML =
-                          features_result[index2].attributes.roomnum;
-                        roomnum_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  } else if (input_block.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.block ==
-                          input_block.value &&
-                        features_result[index2].attributes.roomnum != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.roomnum,
-                          "roomnum"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML =
-                          features_result[index2].attributes.roomnum;
-                        roomnum_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  } else if (input_nameroom.value) {
-                    while (index1 < len) {
-                      // console.log('index2 = ',index2)
-                      if (index2 == length) {
-                        console.log("index2==length");
-                        break;
-                      }
-                      if (
-                        features_result[index2].attributes.nameroom ==
-                          input_nameroom.value &&
-                        features_result[index2].attributes.roomnum != null &&
-                        checkIndenticalLi(
-                          features_result[index2].attributes.roomnum,
-                          "roomnum"
-                        )
-                      ) {
-                        let li = document.createElement("li");
-                        li.setAttribute("class", "collection-item");
-                        li.innerHTML =
-                          features_result[index2].attributes.roomnum;
-                        roomnum_ul.appendChild(li);
-                        index1++;
-                      }
-                      index2++;
-                    }
-                  }
-                  if (index1 != 0) roomnum_ul.classList.add("activeUl");
-                  break;
-              }
+              empty_block = e.srcElement.id;
+              doQueryEmpty(e.srcElement.id);
             }
           });
         });
 
-        const doQuerySelfEnd = () => {
+        const doQueryEmpty = (name) => {
+          console.log("doQueryEmpty");
+          checkAndCloseDropdown();
+          clearUlListSelf();
+
+          let qTask = new QueryTask({
+            url: `https://kazaerospace01/arcgis/rest/services/CampusMap2d_MIL1/MapServer/3`
+          });
+          let params = new Query();
+
+          let sqlTxt = "";
+          let out_fields = "";
+
+          switch (name) {
+            case "block":
+              if (input_nameroom.value && input_roomnum.value) {
+                sqlTxt =
+                  "nameroom = '" +
+                  input_nameroom.value +
+                  "' AND roomnum = '" +
+                  input_roomnum.value +
+                  "'";
+              } else if (input_nameroom.value) {
+                sqlTxt = "nameroom = '" + input_nameroom.value + "'";
+              } else if (input_roomnum.value) {
+                sqlTxt = "roomnum = '" + input_roomnum.value + "'";
+              }
+              out_fields = "block";
+              break;
+            case "nameroom":
+              if (input_block.value && input_roomnum.value) {
+                sqlTxt =
+                  "block = '" +
+                  input_block.value +
+                  "' AND roomnum = '" +
+                  input_roomnum.value +
+                  "'";
+              } else if (input_block.value) {
+                sqlTxt = "block = '" + input_block.value + "'";
+              } else if (input_roomnum.value) {
+                sqlTxt = "roomnum = '" + input_roomnum.value + "'";
+              }
+              out_fields = "nameroom";
+              break;
+            case "roomnum":
+              if (input_block.value && input_nameroom.value) {
+                sqlTxt =
+                  "block = '" +
+                  input_block.value +
+                  "' AND nameroom = '" +
+                  input_nameroom.value +
+                  "'";
+              } else if (input_block.value) {
+                sqlTxt = "block = '" + input_block.value + "'";
+              } else if (input_nameroom.value) {
+                sqlTxt = "nameroom = '" + input_nameroom.value + "'";
+              }
+              out_fields = "roomnum";
+              break;
+          }
+          console.log(sqlTxt);
+          params.where = sqlTxt;
+          params.outFields = [out_fields];
+          params.returnGeometry = false;
+          params.returnDistinctValues = true;
+
+          qTask
+            .execute(params)
+            .then(getResultsEmpty)
+            .catch(promiseRejectedEmpty);
+        };
+
+        // Получение результатов
+        const getResultsEmpty = (response) => {
+          console.log("features", response.features);
+          let length = response.features.length;
+          if (length == 0) {
+            console.log("Нет данных по данному запросу");
+            let li = document.createElement("li");
+            li.setAttribute("class", "collection-item");
+            li.innerHTML = "Нет данных по запросу";
+            let active_element = document.activeElement.id;
+            switch (active_element) {
+              case "block":
+                block_ul.appendChild(li);
+                block_ul.classList.add("activeUl");
+                break;
+              case "nameroom":
+                nameroom_ul.appendChild(li);
+                nameroom_ul.classList.add("activeUl");
+                break;
+              case "roomnum":
+                roomnum_ul.appendChild(li);
+                roomnum_ul.classList.add("activeUl");
+                break;
+            }
+          } else {
+            console.log(response.features);
+            addUlLiEmpty(response.features);
+          }
+        }; // getResultsEnd
+
+        // Вызывается каждый раз, когда запрос отклоняется
+        const promiseRejectedEmpty = (error) => {
+          console.error("Promise rejected: ", error.message);
+        }; // promiseRejectedEnd
+
+        const addUlLiEmpty = (features) => {
+          let index1 = 0;
+          let index2 = 0;
+          let len = 6;
+          let length = features.length;
+          switch (empty_block) {
+            case "block":
+              while (index1 < len) {
+                // console.log('index2 = ',index2)
+                if (index2 == length) {
+                  console.log("index2==length");
+                  break;
+                }
+                if (features[index2].attributes.block != null) {
+                  let li = document.createElement("li");
+                  li.setAttribute("class", "collection-item");
+                  li.innerHTML = features[index2].attributes.block;
+                  block_ul.appendChild(li);
+                  index1++;
+                }
+                index2++;
+              }
+              if (index1 != 0) block_ul.classList.add("activeUl");
+              break;
+            case "nameroom":
+              while (index1 < len) {
+                // console.log('index2 = ',index2)
+                if (index2 == length) {
+                  console.log("index2==length");
+                  break;
+                }
+                if (features[index2].attributes.nameroom != null) {
+                  let li = document.createElement("li");
+                  li.setAttribute("class", "collection-item");
+                  li.innerHTML = features[index2].attributes.nameroom;
+                  nameroom_ul.appendChild(li);
+                  index1++;
+                }
+                index2++;
+              }
+              if (index1 != 0) nameroom_ul.classList.add("activeUl");
+              break;
+            case "roomnum":
+              while (index1 < len) {
+                // console.log('index2 = ',index2)
+                if (index2 == length) {
+                  console.log("index2==length");
+                  break;
+                }
+                if (features[index2].attributes.roomnum != null) {
+                  let li = document.createElement("li");
+                  li.setAttribute("class", "collection-item");
+                  li.innerHTML = features[index2].attributes.roomnum;
+                  roomnum_ul.appendChild(li);
+                  index1++;
+                }
+                index2++;
+              }
+              if (index1 != 0) roomnum_ul.classList.add("activeUl");
+              break;
+          }
+        };
+
+        // Запрос при нажатии на "Найти"
+        const doQueryEnd = () => {
           console.log("DoQueryEnd");
           checkAndCloseDropdown();
           clearUlListSelf();
@@ -459,28 +406,67 @@
             .execute(params)
             .then(getResultsEnd)
             .catch(promiseRejectedEnd);
-        }; // doQuerySelf
+        }; // doQueryEnd
 
+        // Получение результатов
         const getResultsEnd = (response) => {
           clearDropdownSelf();
           clearUlListSelf();
           let length = response.features.length;
           if (length == 0) {
             console.log("Нет данных по данному запросу");
+            let danger_el = document.getElementById("danger");
+            if (!danger_el) {
+              let div = document.querySelector("#search");
+              let div2 = document.createElement("div");
+              div2.setAttribute("id", "danger");
+              div2.classList.add("danger");
+              div2.innerHTML = "Поиск невозможен, измените значения";
+              div.append(div2);
+              setTimeout(() => div2.remove(), 2500);
+            }
           } else if (length == 1) {
             console.log("goto"); //??
             console.log(response.features);
+            goToResult(response.features[0].geometry);
           } else {
             console.log("Много ответов");
             console.log(response.features);
+            if (
+              input_block.value &&
+              !input_nameroom.value &&
+              !input_roomnum.value
+            ) {
+              goToResult(response.features[0].geometry);
+            }
           }
-        }; // getResultsSelf
+        }; // getResultsEnd
 
         // Вызывается каждый раз, когда запрос отклоняется
         const promiseRejectedEnd = (error) => {
           console.error("Promise rejected: ", error.message);
-        }; // promiseRejectedSelf
+        }; // promiseRejectedEnd
 
+        const goToResult = (geometry) => {
+          let geom = geometry;
+          let marker_symbol = {
+            type: "simple-marker",
+            color: [226, 119, 40],
+            outline: {
+              color: [255, 255, 255],
+              width: 1
+            }
+          };
+
+          let search_point = new Graphic({
+            geometry: geom,
+            symbol: marker_symbol
+          });
+          graphic_layer.add(search_point);
+          view.goTo(geom);
+        };
+
+        // Выдает текст запроса
         const checkSqlTextEnd = () => {
           let text = "";
           if (input_block.value) {
@@ -663,6 +649,7 @@
               doQuerySelf(value);
               // Если нет больше значение(Backspace)
             } else {
+              checkReadySearch();
               checkAndCloseDropdown();
               clearUlListSelf();
             }
@@ -720,15 +707,37 @@
 
         var features_result = [];
         const getResultsSelf = (response) => {
+          console.log("features = ", response.features);
           clearDropdownSelf();
           clearUlListSelf();
           features_result = response.features;
           let length = response.features.length;
+
           if (length == 0) {
             console.log("Нет данных по данному запросу");
+            let li = document.createElement("li");
+            li.setAttribute("id", "dangerLi");
+            li.setAttribute("class", "collection-item");
+            li.innerHTML = "Нет данных по запросу";
+            let active_element = document.activeElement.id;
+            switch (active_element) {
+              case "block":
+                block_ul.appendChild(li);
+                block_ul.classList.add("activeUl");
+                break;
+              case "nameroom":
+                nameroom_ul.appendChild(li);
+                nameroom_ul.classList.add("activeUl");
+                break;
+              case "roomnum":
+                roomnum_ul.appendChild(li);
+                roomnum_ul.classList.add("activeUl");
+                break;
+            }
             // } else if (length == 1) {
-            // console.log("goto"); //??
+            // pulseAnimation(true);
           } else {
+            pulseAnimation(false);
             getForSelf(response.features);
           }
         }; // getResultsSelf
@@ -830,6 +839,7 @@
           return txt;
         };
 
+        // Аттрибуты которые должны придти
         const checkOutFields = () => {
           let out_fields = "";
           switch (search_name) {
@@ -864,19 +874,12 @@
           console.log("outfields = ", out_fields);
           return out_fields;
         };
-        const checkReturnGeometry = () => {
-          console.log("checkreturngeometry");
-        };
-        const checkDistinct = () => {
-          console.log("checkDistinct");
-        };
 
         // Первые 6 данных запроса
         var selfDropdownList = [];
         // Получаем список первых 6 данных для "себя"
         const getForSelf = (features) => {
           console.log("getForSelf");
-          console.log("features = ", features);
           let index1 = 0;
           let index2 = 0;
           let len = 6;
@@ -1034,265 +1037,43 @@
           nameroom_ul.innerHTML = "";
           roomnum_ul.innerHTML = "";
         };
-        //-----------------------------------
-        // Запрос для Остальных
-        const doQueryOther = () => {
-          console.log("DoQueryOther");
-          let qTask = new QueryTask({
-            url: `https://kazaerospace01/arcgis/rest/services/CampusMap2d_MIL1/MapServer/3`
-          });
 
-          // let sqlTxt = search_name + " = '" + value + "'";
-          let sqlTxt = checkSqlTxtOther();
-          console.log(sqlTxt);
-          let params = new Query({
-            returnGeometry: true,
-            outFields: ["*"],
-            where: sqlTxt
-          });
-
-          qTask
-            .execute(params)
-            .then(getResultsOther)
-            .catch(promiseRejectedOther);
-        }; // doQueryOther
-
-        // Вызывается каждый раз, когда запрос прошел
-        const getResultsOther = (response) => {
-          let length = response.features.length;
-          if (length == 0) {
-            console.log("Нет данных по данному запросу");
+        const checkReadySearch = () => {
+          if (input_block.value) {
+            if (input_nameroom.value && !input_roomnum.value) {
+              pulseAnimation(false);
+            } else {
+              pulseAnimation(true);
+            }
+          } else if (input_nameroom.value) {
+            if (input_roomnum.value) {
+              pulseAnimation(true);
+            }
+            pulseAnimation(false);
+          } else if (input_roomnum.value) {
+            pulseAnimation(true);
           } else {
-            if (length == 1) {
-              console.log("goto"); //??
-            } else {
-              getForOther(response.features);
-            }
-          }
-        }; // getResults
-
-        // Вызывается каждый раз, когда запрос отклоняется
-        const promiseRejectedOther = (error) => {
-          console.error("Promise rejected: ", error.message);
-        }; // promiseRejected
-
-        // Проверка заполненных полей для текста запроса
-        const checkSqlTxtOther = () => {
-          let txt = "";
-          if (input_block.value) {
-            txt += "block = '" + input_block.value + "'";
-            if (input_nameroom.value) {
-              txt += " AND nameroom = '" + input_nameroom.value + "'";
-            }
-            if (input_roomnum.value) {
-              txt += " AND roomnum = '" + input_roomnum.value + "'";
-            }
-          } else if (input_nameroom.value) {
-            txt += "nameroom = '" + input_nameroom.value + "'";
-            if (input_roomnum.value) {
-              txt += " AND roomnum = '" + input_roomnum.value + "'";
-            }
-          } else if (input_roomnum.value) {
-            txt += "roomnum = '" + input_roomnum.value + "'";
-          }
-          return txt;
-        };
-
-        // Первые 6 данных запроса
-        var blockDropdownList = [];
-        var roomnumDropdownList = [];
-        var nameroomDropdownList = [];
-        // Получаем список первых 6 ответов для "остальных"
-        const getForOther = (features) => {
-          console.log("getForOther");
-          console.log("features = ", features);
-
-          if (input_block.value) {
-            if (input_nameroom.value) {
-              addToDropdown("roomnum", features);
-            } else if (input_roomnum.value) {
-              addToDropdown("nameroom", features);
-            } else {
-              addToDropdown("nameroom", features);
-              addToDropdown("roomnum", features);
-            }
-          } else if (input_nameroom.value) {
-            if (input_roomnum.value) {
-              addToDropdown("block", features);
-            } else {
-              addToDropdown("block", features);
-              addToDropdown("roomnum", features);
-            }
-          } else if (input_roomnum.value) {
-            addToDropdown("block", features);
-            addToDropdown("nameroom", features);
-          }
-          console.log("blockDropdownList", blockDropdownList);
-          console.log("nameroomDropdownList", nameroomDropdownList);
-          console.log("roomnumDropdownList", roomnumDropdownList);
-        };
-
-        // Заполнение dropdownlist-ов
-        const addToDropdown = (name, features) => {
-          let index1 = 0;
-          let index2 = 0;
-          let len = 6;
-          let length = features.length;
-          switch (name) {
-            case "block":
-              console.log("fill in block");
-              clearDropdownOther("block");
-              while (index1 < len) {
-                // console.log('index2 = ',index2)
-                if (index2 == length) {
-                  console.log("index2==length");
-                  break;
-                }
-                // Проверяем заполнен ли атрибут и повторяется ли
-                if (
-                  features[index2].attributes.block != null &&
-                  checkIdenticalOther(
-                    features[index2].attributes.block,
-                    "block"
-                  )
-                ) {
-                  blockDropdownList[index1] = features[index2].attributes.block;
-                  index1++;
-                }
-                index2++;
-              }
-              break;
-            case "nameroom":
-              console.log("fill in nameroom");
-              clearDropdownOther("nameroom");
-              while (index1 < len) {
-                // console.log('index2 = ',index2)
-                if (index2 == length) {
-                  console.log("index2==length");
-                  break;
-                }
-                // Проверяем заполнен ли атрибут и повторяется ли
-                if (
-                  features[index2].attributes.nameroom != null &&
-                  checkIdenticalOther(
-                    features[index2].attributes.nameroom,
-                    "nameroom"
-                  )
-                ) {
-                  nameroomDropdownList[index1] =
-                    features[index2].attributes.nameroom;
-                  index1++;
-                }
-                index2++;
-              }
-              break;
-            case "roomnum":
-              console.log("fill in roomnum");
-              clearDropdownOther("roomnum");
-              while (index1 < len) {
-                // console.log('index2 = ',index2)
-                if (index2 == length) {
-                  console.log("index2==length");
-                  break;
-                }
-                // Проверяем заполнен ли атрибут и повторяется ли
-                if (
-                  features[index2].attributes.roomnum != null &&
-                  checkIdenticalOther(
-                    features[index2].attributes.roomnum,
-                    "roomnum"
-                  )
-                ) {
-                  roomnumDropdownList[index1] =
-                    features[index2].attributes.roomnum;
-                  index1++;
-                }
-                index2++;
-              }
-              break;
+            pulseAnimation(false);
           }
         };
 
-        //??
-        const setToUlListOther = (name) => {
-          console.log("setToUlList");
-          switch (name) {
-            case "block":
-              blockDropdownList.forEach((el) => {
-                let li = document.createElement("li");
-                li.setAttribute("class", "collection-item");
-                li.innerHTML = el;
-                block_ul.appendChild(li);
-              });
-              block_ul.classList.add("activeUl");
-              break;
-            case "nameroom":
-              nameroomDropdownList.forEach((el) => {
-                let li = document.createElement("li");
-                li.setAttribute("class", "collection-item");
-                li.innerHTML = el;
-                nameroom_ul.appendChild(li);
-              });
-              nameroom_ul.classList.add("activeUl");
-              break;
-            case "roomnum":
-              roomnumDropdownList.forEach((el) => {
-                let li = document.createElement("li");
-                li.setAttribute("class", "collection-item");
-                li.innerHTML = el;
-                roomnum_ul.appendChild(li);
-              });
-              roomnum_ul.classList.add("activeUl");
-              break;
+        // Проверка анимации готовности
+        const pulseAnimation = (bol) => {
+          console.log("pulse animation ", bol);
+          let pulse = document.querySelector("a.waves-effect");
+          if (bol) {
+            if (!pulse.classList.contains("pulse")) {
+              pulse.classList.add("pulse");
+              console.log("pulse add");
+            }
+          } else {
+            if (pulse.classList.contains("pulse")) {
+              pulse.classList.remove("pulse");
+              console.log("pulse remove");
+            }
           }
         };
-
-        // Проверка на повторение для OtherDropdown
-        const checkIdenticalOther = (res, name) => {
-          let check = true;
-          switch (name) {
-            case "block":
-              blockDropdownList.forEach((el) => {
-                if (res == el.block) {
-                  check = false;
-                  return;
-                }
-              });
-              break;
-            case "roomnum":
-              roomnumDropdownList.forEach((el) => {
-                if (res == el.roomnum) {
-                  check = false;
-                  return;
-                }
-              });
-              break;
-            case "nameroom":
-              nameroomDropdownList.forEach((el) => {
-                if (res == el.nameroom) {
-                  check = false;
-                  return;
-                }
-              });
-              break;
-          }
-          return check;
-        };
-
-        // Очистка dropdown
-        const clearDropdownOther = (name) => {
-          switch (name) {
-            case "block":
-              blockDropdownList = [];
-              break;
-            case "nameroom":
-              nameroomDropdownList = [];
-              break;
-            case "roomnum":
-              roomnumDropdownList = [];
-              break;
-          }
-        };
+        
       });
     </script>
   </head>
@@ -1301,18 +1082,14 @@
     <div id="viewDiv"></div>
     <div id="search" class="search-menu">
       <div id="search_block" class="search-item input-field">
-        <input id="block" class="validate" type="text" autocomplete="off" />
-        <ul id="block_complete" class="collection">
-          <!--<li class="collection-item">Block 1</li>-->
-        </ul>
+        <input id="block" class="validate" type="text" autocomplete="off"/>
+        <ul id="block_complete" class="collection"></ul>
         <label id="block_label" for="block">Поиск по Блоку</label>
       </div>
       <div id="search_nameroom" class="search-item input-field">
-        <input id="nameroom" class="validate" type="text" autocomplete="off" />
+        <input id="nameroom" class="validate" type="text" autocomplete="off"/>
         <ul id="nameroom_complete" class="collection"></ul>
-        <label id="nameroom_label" for="nameroom"
-          >Поиск по Наименованию кабинета</label
-        >
+        <label id="nameroom_label" for="nameroom">Поиск по Наименованию кабинета</label>
       </div>
       <div id="search_roomnum" class="search-item input-field">
         <input id="roomnum" class="validate" type="text" autocomplete="off" />
@@ -1320,9 +1097,7 @@
         <label id="roomnum_label" for="roomnum">Поиск по Номеру кабинета</label>
       </div>
       <div id="search_button" class="search-button">
-        <a class="waves-effect waves-light btn-small small-padding"
-          ><i class="material-icons left small-margin">search</i>Найти</a
-        >
+        <a class="waves-effect waves-light btn-small small-padding"><i class="material-icons left small-margin">search</i>Найти</a>
       </div>
     </div>
   </body>
