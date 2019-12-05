@@ -79,6 +79,10 @@
         border-radius: 10px;
         background-color: #f36860;
       }
+      #dangerLi {
+        color: white;
+        background-color: #f36860!important;
+      }
     </style>
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -145,22 +149,20 @@
         var empty_block = "";
         view.when(function() {
           view.ui.add(search, "top-right");
-
-          search_button.addEventListener("click", function() {
+          let button = document.querySelector(".waves-effect");
+          button.addEventListener("click", function() {
             doQueryEnd();
           });
 
           // Проверка клика
           document.body.addEventListener("click", function(e) {
-            checkReadySearch();
             let activeUl = document.querySelector(".activeUl");
             // Открыт ли dropdown
             if (activeUl) {
               let src_el = e.srcElement;
-              console.log(e)
+              // console.log(e)
               // Клик был по dropdown
               if (src_el.localName == "li" && src_el.id != "dangerLi") {
-                // querySelector('label > [id=')
                 let text_li = src_el.textContent;
                 switch (src_el.parentElement.id) {
                   case "block_complete":
@@ -179,14 +181,14 @@
                 checkReadySearch();
                 checkAndCloseDropdown();
                 // Клик был не по dropdown
-              } else {
+              } else if (src_el.id != "dangerLi") {
                 let check_active = false;
                 let next_el = e.srcElement.nextElementSibling;
                 if (next_el) {
                   if (next_el.classList) {
                     next_el.classList.forEach((el) => {
                       if (el == "activeUl") {
-                        console.log("find activeul");
+                        // console.log("find activeul");
                         check_active = true;
                       }
                     });
@@ -212,7 +214,7 @@
         });
 
         const doQueryEmpty = (name) => {
-          console.log("doQueryEmpty");
+          // console.log("doQueryEmpty");
           checkAndCloseDropdown();
           clearUlListSelf();
 
@@ -271,7 +273,7 @@
               out_fields = "roomnum";
               break;
           }
-          console.log(sqlTxt);
+          // console.log(sqlTxt);
           params.where = sqlTxt;
           params.outFields = [out_fields];
           params.returnGeometry = false;
@@ -285,10 +287,10 @@
 
         // Получение результатов
         const getResultsEmpty = (response) => {
-          console.log("features", response.features);
+          // console.log("features", response.features);
           let length = response.features.length;
           if (length == 0) {
-            console.log("Нет данных по данному запросу");
+            // console.log("Нет данных по данному запросу");
             let li = document.createElement("li");
             li.setAttribute("class", "collection-item");
             li.innerHTML = "Нет данных по запросу";
@@ -308,7 +310,7 @@
                 break;
             }
           } else {
-            console.log(response.features);
+            // console.log(response.features);
             addUlLiEmpty(response.features);
           }
         }; // getResultsEnd
@@ -328,7 +330,7 @@
               while (index1 < len) {
                 // console.log('index2 = ',index2)
                 if (index2 == length) {
-                  console.log("index2==length");
+                  // console.log("index2==length");
                   break;
                 }
                 if (features[index2].attributes.block != null) {
@@ -346,7 +348,7 @@
               while (index1 < len) {
                 // console.log('index2 = ',index2)
                 if (index2 == length) {
-                  console.log("index2==length");
+                  // console.log("index2==length");
                   break;
                 }
                 if (features[index2].attributes.nameroom != null) {
@@ -364,7 +366,7 @@
               while (index1 < len) {
                 // console.log('index2 = ',index2)
                 if (index2 == length) {
-                  console.log("index2==length");
+                  // console.log("index2==length");
                   break;
                 }
                 if (features[index2].attributes.roomnum != null) {
@@ -383,7 +385,7 @@
 
         // Запрос при нажатии на "Найти"
         const doQueryEnd = () => {
-          console.log("DoQueryEnd");
+          // console.log("DoQueryEnd");
           checkAndCloseDropdown();
           clearUlListSelf();
           let qTask = new QueryTask({
@@ -391,7 +393,7 @@
           });
 
           let sqlTxt = checkSqlTextEnd();
-          console.log(sqlTxt);
+          // console.log(sqlTxt);
 
           let params = new Query({
             where: sqlTxt
@@ -414,7 +416,7 @@
           clearUlListSelf();
           let length = response.features.length;
           if (length == 0) {
-            console.log("Нет данных по данному запросу");
+            // console.log("Нет данных по данному запросу");
             let danger_el = document.getElementById("danger");
             if (!danger_el) {
               let div = document.querySelector("#search");
@@ -426,12 +428,12 @@
               setTimeout(() => div2.remove(), 2500);
             }
           } else if (length == 1) {
-            console.log("goto"); //??
-            console.log(response.features);
+            // console.log("goto"); //??
+            // console.log(response.features);
             goToResult(response.features[0].geometry);
           } else {
-            console.log("Много ответов");
-            console.log(response.features);
+            // console.log("Много ответов");
+            // console.log(response.features);
             if (
               input_block.value &&
               !input_nameroom.value &&
@@ -638,7 +640,7 @@
             !input_nameroom.value
           ) {
             // Если поля всех поисков пусты
-            console.log("input is empty");
+            // console.log("input is empty");
             checkAndCloseDropdown();
             clearUlListSelf();
             // Если есть значение в поле поиска
@@ -679,7 +681,7 @@
         //-----------------------------------
         // Запрос для Своего
         const doQuerySelf = (value) => {
-          console.log("DoQuerySelf");
+          // console.log("DoQuerySelf");
           checkAndCloseDropdown();
           clearUlListSelf();
           let qTask = new QueryTask({
@@ -688,7 +690,7 @@
 
           // let sqlTxt = search_name + " LIKE '" + value + "%'";
           let sqlTxt = checkSqlTxtSelf(value);
-          console.log(sqlTxt);
+          // console.log(sqlTxt);
 
           let params = new Query({
             where: sqlTxt
@@ -707,14 +709,14 @@
 
         var features_result = [];
         const getResultsSelf = (response) => {
-          console.log("features = ", response.features);
+          // console.log("features = ", response.features);
           clearDropdownSelf();
           clearUlListSelf();
           features_result = response.features;
           let length = response.features.length;
 
           if (length == 0) {
-            console.log("Нет данных по данному запросу");
+            // console.log("Нет данных по данному запросу");
             let li = document.createElement("li");
             li.setAttribute("id", "dangerLi");
             li.setAttribute("class", "collection-item");
@@ -871,7 +873,7 @@
               }
               break;
           }
-          console.log("outfields = ", out_fields);
+          // console.log("outfields = ", out_fields);
           return out_fields;
         };
 
@@ -879,19 +881,19 @@
         var selfDropdownList = [];
         // Получаем список первых 6 данных для "себя"
         const getForSelf = (features) => {
-          console.log("getForSelf");
+          // console.log("getForSelf");
           let index1 = 0;
           let index2 = 0;
           let len = 6;
           let length = features.length;
           switch (search_name) {
             case "block":
-              console.log("block");
+              // console.log("block");
               clearDropdownSelf();
               while (index1 < len) {
                 // console.log('index2 = ',index2)
                 if (index2 == length) {
-                  console.log("index2==length");
+                  // console.log("index2==length");
                   break;
                 }
                 // Проверяем заполнен ли атрибут и повторяется ли
@@ -907,12 +909,12 @@
               setToUlList("block");
               break;
             case "nameroom":
-              console.log("nameroom");
+              // console.log("nameroom");
               clearDropdownSelf();
               while (index1 < len) {
                 // console.log('index2 = ',index2)
                 if (index2 == length) {
-                  console.log("index2==length");
+                  // console.log("index2==length");
                   break;
                 }
                 // Проверяем заполнен ли атрибут и повторяется ли
@@ -929,12 +931,12 @@
               setToUlList("nameroom");
               break;
             case "roomnum":
-              console.log("roomnum");
+              // console.log("roomnum");
               clearDropdownSelf();
               while (index1 < len) {
                 // console.log('index2 = ',index2)
                 if (index2 == length) {
-                  console.log("index2==length");
+                  // console.log("index2==length");
                   break;
                 }
                 // Проверяем заполнен ли атрибут и повторяется ли
@@ -951,7 +953,7 @@
               setToUlList("roomnum");
               break;
           }
-          console.log("selfDropdownList", selfDropdownList);
+          // console.log("selfDropdownList", selfDropdownList);
         };
 
         // Проверка на повторение для selfDropdown
@@ -988,7 +990,7 @@
 
         // Создает список для dropdown и показываем его
         const setToUlList = (name) => {
-          console.log("setToUlList");
+          // console.log("setToUlList");
           switch (name) {
             case "block":
               selfDropdownList.forEach((el) => {
@@ -1039,6 +1041,7 @@
         };
 
         const checkReadySearch = () => {
+          // console.log('check')
           if (input_block.value) {
             if (input_nameroom.value && !input_roomnum.value) {
               pulseAnimation(false);
@@ -1059,21 +1062,20 @@
 
         // Проверка анимации готовности
         const pulseAnimation = (bol) => {
-          console.log("pulse animation ", bol);
+          // console.log("pulse animation ", bol);
           let pulse = document.querySelector("a.waves-effect");
           if (bol) {
             if (!pulse.classList.contains("pulse")) {
               pulse.classList.add("pulse");
-              console.log("pulse add");
+              // console.log("pulse add");
             }
           } else {
             if (pulse.classList.contains("pulse")) {
               pulse.classList.remove("pulse");
-              console.log("pulse remove");
+              // console.log("pulse remove");
             }
           }
         };
-        
       });
     </script>
   </head>
@@ -1082,14 +1084,16 @@
     <div id="viewDiv"></div>
     <div id="search" class="search-menu">
       <div id="search_block" class="search-item input-field">
-        <input id="block" class="validate" type="text" autocomplete="off"/>
+        <input id="block" class="validate" type="text" autocomplete="off" />
         <ul id="block_complete" class="collection"></ul>
         <label id="block_label" for="block">Поиск по Блоку</label>
       </div>
       <div id="search_nameroom" class="search-item input-field">
-        <input id="nameroom" class="validate" type="text" autocomplete="off"/>
+        <input id="nameroom" class="validate" type="text" autocomplete="off" />
         <ul id="nameroom_complete" class="collection"></ul>
-        <label id="nameroom_label" for="nameroom">Поиск по Наименованию кабинета</label>
+        <label id="nameroom_label" for="nameroom"
+          >Поиск по Наименованию кабинета</label
+        >
       </div>
       <div id="search_roomnum" class="search-item input-field">
         <input id="roomnum" class="validate" type="text" autocomplete="off" />
@@ -1097,7 +1101,9 @@
         <label id="roomnum_label" for="roomnum">Поиск по Номеру кабинета</label>
       </div>
       <div id="search_button" class="search-button">
-        <a class="waves-effect waves-light btn-small small-padding"><i class="material-icons left small-margin">search</i>Найти</a>
+        <a class="waves-effect waves-light btn-small small-padding"
+          ><i class="material-icons left small-margin">search</i>Найти</a
+        >
       </div>
     </div>
   </body>
